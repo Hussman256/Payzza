@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Payzza – Think payments think pi</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#f2fbf7',
+              100: '#d9f6ea',
+              200: '#b5ecd6',
+              300: '#86dfbf',
+              400: '#4bcfa5',
+              500: '#1fbf8f',
+              600: '#14a67e',
+              700: '#14876a',
+              800: '#136c58',
+              900: '#0f5648'
+            },
+            ink: {
+              900: '#0A0F14',
+              800: '#121820',
+              700: '#1B2430',
+              600: '#243142',
+              500: '#2E3E53',
+              400: '#6C7A92',
+              300: '#94A3B8',
+              200: '#B8C3D4',
+              100: '#D7DFEA',
+              50:  '#EEF3F9'
+            },
+            accent: {
+              yellow: '#f5b700',
+              red: '#ef4444',
+              blue: '#3b82f6',
+              green: '#22c55e',
+            }
+          },
+          boxShadow: {
+            soft: '0 8px 24px rgba(0,0,0,.12)',
+            card: '0 12px 28px rgba(16,24,40,.15)'
+          },
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .tap { transition: transform .06s ease; }
+    .tap:active { transform: scale(.98); }
+    .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+    .safe-top { padding-top: env(safe-area-inset-top); }
+    .no-highlight { -webkit-tap-highlight-color: transparent; }
+    .glass {
+      background: rgba(255, 176, 8, 0.7);
+      backdrop-filter: saturate(180%) blur(10px);
+    }
+    .grad {
+      background-image: radial-gradient(1200px 400px at 50% -10%, rgba(31,191,143,.25), transparent 60%),
+                        linear-gradient(180deg, #0A0F14 0%, #0F1720 100%);
+    }
+    .pill { box-shadow: inset 0 -2px 0 rgba(0,0,0,.12); }
+    .nav-active { color: #1fbf8f; }
+    .badge {
+      background: linear-gradient(135deg, #1fbf8f, #14a67e);
+      color: white;
+    }
+    .outline-pill {
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(6px);
+    }
+    .fade-in { animation: fade .18s ease-out; }
+    .slide-up { animation: slideUp .22s ease-out; }
+    @keyframes fade { from{opacity:0} to{opacity:1} }
+    @keyframes slideUp { from{transform: translateY(12px); opacity:0} to{transform: translateY(0); opacity:1} }
+  </style>
+</head>
+<body class="bg-ink-900 text-white font-sans no-highlight">
+  <div id="app" class="min-h-screen grad flex items-stretch justify-center">
+    <div class="w-full max-w-sm min-h-screen flex flex-col relative">
+
+      <!-- Top Bar -->
+      <header class="safe-top px-4 pt-4 pb-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-xl bg-brand-500/15 flex items-center justify-center">
+            <!-- Payzza mark -->
+            <svg viewBox="0 0 48 48" class="w-5 h-5">
+              <defs>
+                <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#1fbf8f"/>
+                  <stop offset="1" stop-color="#14a67e"/>
+                </linearGradient>
+              </defs>
+              <path d="M24 4c11.046 0 20 8.954 20 20s-8.954 20-20 20S4 35.046 4 24 12.954 4 24 4Z" fill="url(#g)"/>
+              <path d="M16 26.5h8l-5.5 9.5h6.5l6.5-11-5.5-9.5H20l5 9.5h-9v1.5Z" fill="white" opacity=".95"/>
+            </svg>
+          </div>
+          <div>
+            <div class="text-sm text-ink-200">Welcome back</div>
+            <div class="font-semibold">Payzza</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnNotifications" class="tap w-10 h-10 rounded-xl outline-pill flex items-center justify-center">
+            <span class="relative">
+              <svg viewBox="0 0 24 24" class="w-5 h-5 text-ink-200"><path fill="currentColor" d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm6-6v-3.5a6 6 0 1 0-12 0V16l-2 2v1h16v-1l-2-2Z"/></svg>
+              <span id="notifDot" class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full badge"></span>
+            </span>
+          </button>
+          <button id="btnScan" class="tap w-10 h-10 rounded-xl bg-brand-500 text-white flex items-center justify-center shadow-card">
+            <svg viewBox="0 0 24 24" class="w-5 h-5"><path fill="currentColor" d="M3 3h6v2H5v4H3V3Zm10 0h8v6h-2V5h-6V3ZM3 15h2v6h6v2H3v-8Zm16 0h2v8h-8v-2h6v-6Z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <main id="screenContainer" class="flex-1 px-4 pb-28 space-y-4"></main>
+
+      <!-- Bottom Navigation -->
+      <nav class="safe-bottom fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-sm">
+        <div class="mx-4 mb-3 glass rounded-2xl shadow-soft">
+          <div class="grid grid-cols-4">
+            <button data-tab="home" class="nav-btn tap flex flex-col items-center gap-1 py-3">
+              <svg viewBox="0 0 24 24" class="w-5 h-5"><path fill="currentColor" d="M12 5.5 4 12h2v7h5v-5h2v5h5v-7h2l-8-6.5Z"/></svg>
+              <span class="text-2xs text-ink-200">Home</span>
+            </button>
+            <button data-tab="explore" class="nav-btn tap flex flex-col items-center gap-1 py-3 opacity-90">
+              <svg viewBox="0 0 24 24" class="w-5 h-5"><path fill="currentColor" d="M10 20v-6H4l10-10v6h6L10 20Z"/></svg>
+              <span class="text-2xs text-ink-200">Explore</span>
+            </button>
+            <button data-tab="wallet" class="nav-btn tap flex flex-col items-center gap-1 py-3 opacity-90">
+              <svg viewBox="0 0 24 24" class="w-5 h-5"><path fill="currentColor" d="M20 7H5a3 3 0 0 0-3 3v4a3 3 0 0 0 3 3h15a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2Zm-1 7h-3v-4h3a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1Z"/></svg>
+              <span class="text-2xs text-ink-200">Wallet</span>
+            </button>
+            <button data-tab="profile" class="nav-btn tap flex flex-col items-center gap-1 py-3 opacity-90">
+              <svg viewBox="0 0 24 24" class="w-5 h-5"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5 0-9 2.5-9 5.5V22h18v-2.5C21 16.5 17 14 12 14Z"/></svg>
+              <span class="text-2xs text-ink-200">Profile</span>
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Toast -->
+      <div id="toast" class="pointer-events-none fixed left-1/2 -translate-x-1/2 bottom-24 opacity-0 transition-opacity duration-200">
+        <div class="bg-ink-800/95 text-white px-4 py-2 rounded-full shadow-soft text-sm flex items-center gap-2">
+          <span id="toastIcon">✅</span>
+          <span id="toastMsg">Action completed</span>
+        </div>
+      </div>
+
+      <!-- Modal -->
+      <div id="modal" class="hidden fixed inset-0 z-50">
+        <div class="absolute inset-0 bg-black/50 fade-in"></div>
+        <div class="absolute left-0 right-0 bottom-0 p-4 slide-up">
+          <div class="bg-ink-800 rounded-2xl p-4 shadow-card space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="font-semibold" id="modalTitle">Quick Action</div>
+              <button id="modalClose" class="tap w-9 h-9 rounded-xl outline-pill flex items-center justify-center">
+                <svg viewBox="0 0 24 24" class="w-5 h-5 text-ink-200"><path fill="currentColor" d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L10.59 13.4 4.29 19.71 2.88 18.3 9.17 12 2.88 5.71 4.29 4.3l6.3 6.29 6.29-6.3 1.42 1.42Z"/></svg>
+              </button>
+            </div>
+            <div id="modalBody" class="text-ink-200 text-sm">
+              Action content
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // State
+    const state = {
+      currentTab: 'home',
+      loggedIn: false,
+      rates: {
+        USD: 50.12,
+        NGN: 75000,
+        EUR: 46.90,
+        GBP: 40.10,
+        GHS: 585.50,
+        KES: 6800
+      },
+      piBalance: 12.8574,
+      notifications: [
+        { id: 1, msg: 'Your airtime purchase was successful', time: '2m ago' },
+        { id: 2, msg: 'Get 5% bonus on data top-ups today', time: '1h ago' }
+      ],
+      txns: [
+        { id: 't1', type: 'Electricity', amt: -0.245, note: 'Ikeja Electric', time: 'Today, 10:12' },
+        { id: 't2', type: 'Airtime', amt: -0.050, note: 'MTN 0903•••', time: 'Yesterday, 21:08' },
+        { id: 't3', type: 'Received', amt: 1.250, note: 'From @jide', time: 'Mon, 14:22' },
+      ],
+      flow: {
+        service: null,
+        data: {}
+      }
+    };
+
+    // Helpers
+    const el = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    function showToast(msg, icon='✅'){ const t=el('#toast'); el('#toastMsg').textContent=msg; el('#toastIcon').textContent=icon; t.style.opacity='1'; setTimeout(()=>t.style.opacity='0',1600); }
+    function openModal(title, body){ el('#modalTitle').textContent=title; el('#modalBody').innerHTML=body; el('#modal').classList.remove('hidden'); }
+    function closeModal(){ el('#modal').classList.add('hidden'); }
+    function fmt(n, d=2){ return Number(n).toLocaleString(undefined,{minimumFractionDigits:d, maximumFractionDigits:d}); }
+    function computeConversions(pi){ return Object.entries(state.rates).map(([code,rate])=>({code,value:pi*rate})); }
+    function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+    function Divider(){ return `<div class="h-px bg-white/10 mx-3"></div>` }
+    function maskPhone(s){ if(!s) return ''; return s.slice(0,3)+'•••'+s.slice(-3); }
+    // helper: require login before running an action
+function requireLogin(fn) {
+  return function(...args) {
+    if (state.loggedIn) return fn(...args);
+
+    // show a small modal that asks the user to sign in
+    openModal('Sign in required', `
+      <div class="text-sm text-ink-200">Please sign in with Pi to use this feature.</div>
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <button id="modalCancel" class="tap py-2 rounded-xl outline-pill">Close</button>
+        <button id="modalLogin" class="tap py-2 rounded-xl bg-brand-500 text-white">Sign in with Pi</button>
+      </div>
+    `);
+
+    // wire the modal buttons
+    setTimeout(()=>{
+      const ln = document.getElementById('modalLogin');
+      if (ln) ln.onclick = () => { loginWithPi(); closeModal(); };
+      const mc = document.getElementById('modalCancel');
+      if (mc) mc.onclick = () => closeModal();
+    }, 0);
+  };
+}
+
+// === Pi login & pay (prototype) ===
+function loginWithPi() {
+  // Prototype: simulate a successful login
+  state.loggedIn = true;
+  state.piUser = '@amina'; // changeable demo handle
+  showToast('Logged in with Pi (demo) ✅');
+  // re-render so UI updates where we show login state
+  render(state.currentTab);
+}
+
+function logoutPi() {
+  state.loggedIn = false;
+  state.piUser = null;
+  showToast('Logged out');
+  render(state.currentTab);
+}
+
+/**
+ * payWithPi(options)
+ * options.ngn  - amount in NGN (number) to pay (optional, default 1000)
+ * options.label - description to appear in tx list (optional)
+ */
+function payWithPi(options = {}) {
+  const ngn = Number(options.ngn || 1000);
+  const label = options.label || 'Pay with Pi';
+
+  if (!state.loggedIn) {
+    showToast('Please login with Pi first', '⚠️');
+    return;
+  }
+  // compute cost in Pi using live rates
+  const piCost = +(ngn / state.rates.NGN);
+
+  if (piCost > state.piBalance) {
+    showToast('Insufficient Pi balance', '⚠️');
+    return;
+  }
+
+  // deduct balance & add a txn entry (prototype)
+  state.piBalance = +(state.piBalance - piCost);
+  state.txns.unshift({
+    id: 't' + Math.random().toString(36).slice(2,6),
+    type: label,
+    amt: -piCost,
+    note: `${label} • ₦${Math.round(ngn)}`,
+    time: 'Just now'
+  });
+
+  showToast('Payment sent (demo) ✅');
+  render(state.currentTab);
+}
+
+    // Components
+    function TxnItem(tx){
+      const sign = tx.amt>=0?'+':'−';
+      const color = tx.amt>=0?'text-accent-green':'text-accent-red';
+      const icon = tx.type==='Received'?'⬇️':'⬆️';
+      return `
+        <div class="rounded-2xl bg-ink-800 p-3 flex items-center gap-3 shadow-soft">
+          <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg">${icon}</div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <div class="font-medium">${tx.type}</div>
+              <div class="font-semibold ${color}"> ${sign}π ${fmt(Math.abs(tx.amt), 3)} </div>
+            </div>
+            <div class="text-2xs text-ink-300">${tx.note} • ${tx.time}</div>
+          </div>
+        </div>
+      `;
+    }
+    function RateCard(code, value){
+      const symbols = { USD:'$', NGN:'₦', EUR:'€', GBP:'£', GHS:'₵', KES:'KSh' };
+      return `
+        <div class="rounded-xl outline-pill p-3">
+          <div class="flex items-center justify-between">
+            <div class="text-sm font-medium">${code}</div>
+            <span class="text-2xs px-2 py-0.5 rounded-full bg-white/10">1 Pi</span>
+          </div>
+          <div class="mt-1 text-lg font-semibold">${symbols[code]||''}${fmt(value)}</div>
+        </div>
+      `;
+    }
+    function ProfileRow(title, desc, emoji, key){
+      return `
+        <button data-profile="${key}" class="tap w-full p-3 rounded-xl flex items-center gap-3 hover:bg-white/5">
+          <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg">${emoji}</div>
+          <div class="text-left">
+            <div class="font-medium">${title}</div>
+            <div class="text-2xs text-ink-300">${desc}</div>
+          </div>
+          <div class="ml-auto text-ink-300">
+            <svg viewBox="0 0 24 24" class="w-5 h-5"><path fill="currentColor" d="M9 18l6-6-6-6v12Z"/></svg>
+          </div>
+        </button>
+      `;
+    }
+
+    // Screens
+    function ScreenHome(){
+      return `
+        <section class="space-y-4">
+        ${!state.loggedIn ? `
+  <div class="rounded-2xl bg-ink-800 p-3 shadow-soft">
+    <div class="text-sm text-ink-200 mb-2">Sign in to use Pi payments</div>
+    <button onclick="loginWithPi()" class="tap w-full py-3 rounded-xl bg-brand-500 text-white shadow-card font-semibold">
+      Login with Pi
+    </button>
+  </div>
+` : `
+  <div class="rounded-2xl bg-ink-800 p-3 shadow-soft flex items-center justify-between">
+    <div>
+      <div class="font-semibold">Signed in as <span class="text-brand-400">${state.piUser || '@user'}</span></div>
+      <div class="text-2xs text-ink-300">You can now pay with Pi</div>
+    </div>
+    <button onclick="logoutPi()" class="tap px-3 py-2 rounded-xl outline-pill">Logout</button>
+  </div>
+`}
+
+          <!-- Wallet Hero -->
+          <div class="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-ink-800 to-ink-700 shadow-card">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-ink-200 text-sm">Pi Wallet</div>
+                <div class="text-3xl font-semibold mt-1">π ${fmt(state.piBalance, 4)}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-ink-200 text-xs">Est. Value</div>
+                <div class="text-lg font-semibold">$${fmt(state.piBalance * state.rates.USD)}</div>
+                <div class="text-ink-300 text-xs">₦${fmt(state.piBalance * state.rates.NGN)}</div>
+              </div>
+            </div>
+            <div class="mt-4 flex gap-2">
+              <button data-action="receive" class="tap flex-1 py-2 rounded-xl outline-pill text-sm flex items-center justify-center gap-2">
+                <svg viewBox="0 0 24 24" class="w-4 h-4"><path fill="currentColor" d="M12 3v10.586l3.293-3.293 1.414 1.414L12 17.414l-4.707-4.707 1.414-1.414L11 13.586V3h1Z"/></svg>
+                Receive
+              </button>
+             <button data-action
+             ="send" class
+             ="tap flex-1 py-2 rounded-xl bg-brand-500 text-white text-sm shadow-card flex items-center justify-center gap-2">
+              <svg viewBox="0 0 24 24" class="w-4 h-4">
+              <path fill="currentColor" d="M12 21V10.414l-3.293 3.293-1.414-1.414L12 6.586l4.707 4.707-1.414 1.414L13 10.414V21h-1Z"/>
+                </svg>
+                Send
+               </button>
+
+                
+              
+  
+            </div>
+            <div class="absolute -right-10 -top-10 w-48 h-48 rounded-full bg-brand-500/10"></div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="grid grid-cols-4 gap-3">
+            <button data-go="bills" class="tap p-4 rounded-2xl bg-ink-800 hover:bg-ink-700 transition shadow-soft flex flex-col items-center gap-2">
+              <div class="w-12 h-12 rounded-xl bg-brand-500/15 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand-500"><path fill="currentColor" d="M6 2h12a2 2 0 0 1 2 2v16l-4-3-4 3-4-3-4 3V4a2 2 0 0 1 2-2Z"/></svg>
+              </div>
+              <div class="text-xs font-medium">Bills</div>
+            </button>
+            <button data-go="airtime" class="tap p-4 rounded-2xl bg-ink-800 hover:bg-ink-700 transition shadow-soft flex flex-col items-center gap-2">
+              <div class="w-12 h-12 rounded-xl bg-brand-500/15 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand-500"><path fill="currentColor" d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7l-4-4V6l4-4Z"/></svg>
+              </div>
+              <div class="text-xs font-medium">Airtime</div>
+            </button>
+            <button data-go="data" class="tap p-4 rounded-2xl bg-ink-800 hover:bg-ink-700 transition shadow-soft flex flex-col items-center gap-2">
+              <div class="w-12 h-12 rounded-xl bg-brand-500/15 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand-500"><path fill="currentColor" d="M3 6h18v4H3V6Zm0 6h18v4H3v-4Z"/></svg>
+              </div>
+              <div class="text-xs font-medium">Data</div>
+            </button>
+            <button data-go="betting" class="tap p-4 rounded-2xl bg-ink-800 hover:bg-ink-700 transition shadow-soft flex flex-col items-center gap-2">
+              <div class="w-12 h-12 rounded-xl bg-brand-500/15 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand-500"><path fill="currentColor" d="M12 2 4 6v6c0 5 4 9 8 10 4-1 8-5 8-10V6l-8-4Zm0 3.09 5 2.5v3.89c0 3.27-2.35 6.3-5 7.53-2.65-1.23-5-4.26-5-7.53V7.59l5-2.5Z"/></svg>
+              </div>
+              <div class="text-xs font-medium">Betting</div>
+            </button>
+          </div>
+
+          <!-- Recent -->
+          <div class="mt-2">
+            <div class="flex items-center justify-between mb-2">
+              <div class="text-sm text-ink-200">Recent</div>
+              <button data-go="wallet" class="tap text-xs text-brand-400">View wallet</button>
+            </div>
+            <div class="space-y-2">
+              ${state.txns.slice(0,3).map(tx => TxnItem(tx)).join('')}
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function ScreenExplore(){
+      const items = [
+        { title: 'Betting', desc: 'Top up Bet9ja, SportyBet, 1xBet, BetKing', tag: 'New' },
+        { title: 'Gift Cards', desc: 'Buy and send gift cards instantly', tag: 'Coming soon' },
+        { title: 'Cable TV', desc: 'DSTV, GOTV, Startimes', tag: 'Beta' },
+        { title: 'Education', desc: 'Exam pins and fees', tag: 'Idea' },
+      ];
+      return `
+        <section class="space-y-4">
+          <div class="rounded-2xl bg-ink-800 p-4 shadow-soft">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="badge text-xs px-2 py-0.5 rounded-full">Explore</span>
+              <div class="text-sm text-ink-200">Discover services</div>
+            </div>
+            <div class="text-lg font-semibold">Do more with Pi</div>
+            <div class="text-sm text-ink-200 mt-1">New utilities and offers will appear here.</div>
+          </div>
+          <div class="grid gap-3">
+            ${items.map(x=>`
+              <div class="rounded-2xl bg-ink-800 p-4 shadow-soft flex items-start justify-between">
+                <div>
+                  <div class="font-medium">${x.title}</div>
+                  <div class="text-sm text-ink-300">${x.desc}</div>
+                </div>
+                <span class="text-2xs px-2 py-0.5 rounded-full bg-white/10">${x.tag}</span>
+              </div>
+            `).join('')}
+          </div>
+          <button data-go="betting" class="tap w-full py-3 rounded-xl bg-brand-500 text-white shadow-card">Try Betting Top-up</button>
+        </section>
+      `;
+    }
+
+    function ScreenWallet(){
+      const conversions = computeConversions(1);
+      return `
+        <section class="space-y-4">
+          <div class="rounded-2xl bg-ink-800 p-4 shadow-card">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-ink-200 text-sm">Pi Balance</div>
+                <div class="text-3xl font-semibold mt-1">π ${fmt(state.piBalance, 4)}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-ink-200 text-xs">Est. Value</div>
+                <div class="text-lg font-semibold">$${fmt(state.piBalance * state.rates.USD)}</div>
+                <div class="text-ink-300 text-xs">₦${fmt(state.piBalance * state.rates.NGN)}</div>
+              </div>
+            </div>
+            <div class="mt-4 grid grid-cols-3 gap-2">
+              <button data-action="receive" class="tap py-2 rounded-xl outline-pill text-sm">Receive</button>
+              <button data-action="send" class="tap py-2 rounded-xl outline-pill text-sm">Send</button>
+              <button data-go="convert" class="tap py-2 rounded-xl bg-brand-500 text-white text-sm shadow-card">Convert</button>
+            </div>
+          </div>
+
+          <!-- Pi Converter -->
+          <div class="rounded-2xl bg-ink-800 p-4 shadow-soft">
+            <div class="flex items-center justify-between">
+              <div class="font-semibold">Pi Converter</div>
+              <div class="text-2xs text-ink-300">Live rates</div>
+            </div>
+            <div class="mt-3">
+              <label class="text-xs text-ink-300">Amount (Pi)</label>
+              <div class="mt-1 flex items-center gap-2">
+                <input id="piInput" type="number" min="0" step="0.0001" value="1" class="w-full bg-ink-900 text-white rounded-xl px-3 py-2 outline-none ring-1 ring-white/10 focus:ring-brand-500" />
+                <button id="piMax" class="tap px-3 py-2 rounded-xl outline-pill text-xs">Max</button>
+              </div>
+            </div>
+            <div id="rateGrid" class="mt-3 grid grid-cols-2 gap-2">
+              ${conversions.map(c => RateCard(c.code, c.value)).join('')}
+            </div>
+            <div class="mt-3 text-2xs text-ink-300">Rates refresh automatically.</div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold">Recent Transactions</div>
+              <button data-refresh="tx" class="tap text-xs text-brand-400">Refresh</button>
+            </div>
+            <div class="space-y-2" id="txnList">
+              ${state.txns.map(tx => TxnItem(tx)).join('')}
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function ScreenProfile(){
+      return `
+        <section class="space-y-4">
+          <div class="rounded-2xl bg-ink-800 p-4 shadow-soft flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-brand-500/20 flex items-center justify-center">
+              <span class="text-lg">👤</span>
+            </div>
+            <div>
+              <div class="font-semibold">Hi, Amina</div>
+              <div class="text-sm text-ink-300">@amina.ng</div>
+            </div>
+            <span class="ml-auto text-2xs px-2 py-0.5 rounded-full bg-white/10">Verified</span>
+          </div>
+
+          <div class="rounded-2xl bg-ink-800 p-2 shadow-soft">
+            ${ProfileRow('KYC Verification', 'ID, selfie, proof of address', '🛡️', 'kyc')}
+            ${Divider()}
+            ${ProfileRow('Security', 'PIN & device locks', '🔒', 'security')}
+            ${Divider()}
+            ${ProfileRow('Support', 'Chat with us', '💬', 'support')}
+            ${Divider()}
+            ${ProfileRow('Preferences', 'Language, notifications', '⚙️', 'prefs')}
+            ${Divider()}
+            ${ProfileRow('About Payzza', 'Version 1.0.0', 'ℹ️', 'about')}
+          </div>
+
+          <div class="rounded-2xl bg-ink-800 p-4 shadow-soft">
+            <div class="text-sm text-ink-300">Need help?</div>
+            <button data-action="contact" class="tap mt-2 w-full py-3 rounded-xl bg-brand-500 text-white shadow-card">Contact Support</button>
+          </div>
+        </section>
+      `;
+    }
+
+    // Payment + Betting flows
+    function ScreenSelectService(kind){
+      const titles = {
+        bills: 'Pay Electricity',
+        airtime: 'Buy Airtime',
+        data: 'Buy Data',
+        betting: 'Top-up Betting Wallet'
+      };
+      const providers =
+        kind === 'bills'
+          ? ['Ikeja Electric', 'Eko Electric', 'Abuja Disco', 'Kano Disco']
+          : kind === 'betting'
+          ? ['Bet9ja', 'SportyBet', '1xBet', 'BetKing']
+          : ['MTN', 'Airtel', 'Glo', '9mobile'];
+      return `
+        <section class="space-y-4">
+          <div class="flex items-center gap-3">
+            <button data-back class="tap w-10 h-10 rounded-xl outline-pill flex items-center justify-center">
+              <svg viewBox="0 0 24 24" class="w-5 h-5"><path fill="currentColor" d="M15 19 8 12l7-7 1.41 1.41L10.83 12l5.58 5.59L15 19Z"/></svg>
+            </button>
+            <div>
+              <div class="text-ink-300 text-xs">Payzza</div>
+              <div class="font-semibold text-lg">${titles[kind]}</div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl bg-ink-800 p-4 shadow-soft">
+            <div class="text-sm text-ink-300 mb-2">Select Provider</div>
+            <div class="grid grid-cols-2 gap-2">
+              ${providers.map(p => `
+                <button data-pick="${p}" class="tap p-3 rounded-xl outline-pill text-sm flex items-center justify-between">
+                  <span>${p}</span>
+                  <svg viewBox="0 0 24 24" class="w-4 h-4 text-ink-300"><path fill="currentColor" d="M9 18l6-6-6-6v12Z"/></svg>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function ScreenEnterDetails(kind, provider){
+      const isBills = kind==='bills';
+      const isData = kind==='data';
+      const isBet = kind==='betting';
+      const idLabel = isBills ? 'Meter Number' : isBet ? 'Account ID / Username' : 'Phone Number';
+      const idPlaceholder = isBills ? 'e.g. 04123456789' : isBet ? 'e.g. SB123456 or @user' : 'e.g. 09030000000';
+      const extra = isData ? `
+        <div>
+          <label class="text-xs text-ink-300">Data Plan</label>
+          <select id="detailPlan" class="mt-1 w-full bg-ink-900 text-white rounded-xl px-3 py-2 ring-1 ring-white/10 focus:ring-brand-500">
+            <option value="1GB">1.0 GB (₦800)</option>
+            <option value="2.5GB">2.5 GB (₦1500)</option>
+            <option value="5GB">5 GB (₦2800)</option>
+            <option value="10GB">10 GB (₦5200)</option>
+          </select>
+        </div>
+      ` : `
+        <div>
+          <label class="text-xs text-ink-300">Amount (₦)</label>
+          <input id="detailAmount" type="number" min="${isBet?100:50}" step="50" value="${isBet?1000:(kind==='airtime'?500:5000)}" class="mt-1 w-full bg-ink-900 text-white rounded-xl px-3 py-2 ring-1 ring-white/10 focus:ring-brand-500"/>
+          ${isBet ? `<div class="text-2xs text-ink-300 mt-1">Min ₦100 for betting top-ups.</div>`:''}
+        </div>
+      `;
+      return `
+        <section class="space-y-4">
+          <div class="flex items-center gap-3">
+            <button data-back class="tap w-10 h-10 rounded-xl outline-pill flex items-center justify-center">
+              <svg viewBox="0 0 24 24" class="w-5 h-5"><path fill="currentColor" d="M15 19 8 12l7-7 1.41 1.41L10.83 12l5.58 5.59L15 19Z"/></svg>
+            </button>
+            <div>
+              <div class="text-ink-300 text-xs">${provider}</div>
+              <div class="font-semibold text-lg">${isBet?'Wallet Top-up':'Enter Details'}</div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl bg-ink-800 p-4 shadow-soft space-y-3">
+            <div>
+              <label class="text-xs text-ink-300">${idLabel}</label>
+              <input id="detailId" type="text" placeholder="${idPlaceholder}" class="mt-1 w-full bg-ink-900 text-white rounded-xl px-3 py-2 ring-1 ring-white/10 focus:ring-brand-500"/>
+            </div>
+            ${extra}
+            <button data-next="confirm" class="tap w-full py-3 rounded-xl bg-brand-500 text-white shadow-card">Continue</button>
+            ${isBet ? `<div class="text-2xs text-ink-300 text-center">Demo only – no real bets are placed.</div>`:''}
+          </div>
+        </section>
+      `;
+    }
+
+    function ScreenConfirm(kind){
+      const p = state.flow.data;
+      let ngn = 0;
+      if (kind === 'data') {
+        const priceMap = { '1GB':800, '2.5GB':1500, '5GB':2800, '10GB':5200 };
+        ngn = priceMap[p.plan] || 0;
+      } else {
+        ngn = Number(p.amount || 0);
+      }
+      const piCost = (ngn / state.rates.NGN);
+      const title = kind==='betting' ? 'Betting Top-up' : capitalize(kind);
+      return `
+        <section class="space-y-4">
+          <div class="flex items-center gap-3">
+            <button data-back class="tap w-10 h-10 rounded-xl outline-pill flex items-center justify-center">
+              <svg viewBox="0 0 24 24" class="w-5 h-5"><path fill="currentColor" d="M15 19 8 12l7-7 1.41 1.41L10.83 12l5.58 5.59L15 19Z"/></svg>
+            </button>
+            <div>
+              <div class="text-ink-300 text-xs">Confirm Payment</div>
+              <div class="font-semibold text-lg">${title}</div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl bg-ink-800 p-4 shadow-soft space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="text-ink-300 text-sm">Provider</div>
+              <div class="font-medium">${p.provider}</div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="text-ink-300 text-sm">${kind==='bills'?'Meter': kind==='betting'?'Account':'Phone'}</div>
+              <div class="font-medium">${p.id}</div>
+            </div>
+            ${kind==='data' ? `
+              <div class="flex items-center justify-between">
+                <div class="text-ink-300 text-sm">Plan</div>
+                <div class="font-medium">${p.plan}</div>
+              </div>
+            `: ''}
+
+            <div class="border-t border-white/10 my-2"></div>
+
+            <div class="flex items-center justify-between">
+              <div class="text-ink-300 text-sm">Amount</div>
+              <div class="font-semibold">₦${fmt(ngn, 0)}</div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="text-ink-300 text-sm">Pay with</div>
+              <div class="font-medium">π ${fmt(piCost, 6)}</div>
+            </div>
+
+            <button data-next="success" class="tap w-full py-3 rounded-xl bg-brand-500 text-white shadow-card mt-2">Pay Now</button>
+            <div class="text-2xs text-ink-300 text-center">Fast, secure payments powered by Pi.</div>
+          </div>
+        </section>
+      `;
+    }
+
+    function ScreenSuccess(kind){
+      const p = state.flow.data;
+      const title = kind==='betting' ? 'Top-up Successful' : 'Payment Successful';
+      const detailTitle = kind==='betting' ? 'Betting Account' : 'Details';
+      return `
+        <section class="space-y-4">
+          <div class="rounded-2xl bg-ink-800 p-6 shadow-card flex flex-col items-center text-center">
+            <div class="w-16 h-16 rounded-full bg-brand-500/20 flex items-center justify-center mb-2">
+              <svg viewBox="0 0 24 24" class="w-8 h-8 text-brand-500"><path fill="currentColor" d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17Z"/></svg>
+            </div>
+            <div class="text-xl font-semibold">${title}</div>
+            <div class="text-sm text-ink-300 mt-1">${kind==='betting'?'Your betting wallet has been funded.':'Your request has been processed.'}</div>
+          </div>
+          <div class="rounded-2xl bg-ink-800 p-4 shadow-soft">
+            <div class="flex items-center justify-between">
+              <div class="text-ink-300 text-sm">Reference</div>
+              <div class="font-mono text-sm">KWK-${Math.random().toString(36).slice(2,8).toUpperCase()}</div>
+            </div>
+            <div class="flex items-center justify-between mt-2">
+              <div class="text-ink-300 text-sm">${detailTitle}</div>
+              <div class="text-right">
+                <div class="font-medium">${p.provider}</div>
+                <div class="text-ink-300 text-xs">${p.id}</div>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button data-go="home" class="tap py-3 rounded-xl outline-pill">Go Home</button>
+            <button data-go="wallet" class="tap py-3 rounded-xl bg-brand-500 text-white shadow-card">View Wallet</button>
+          </div>
+        </section>
+      `;
+    }
+
+    // Render
+    function render(tab = state.currentTab){
+      state.currentTab = tab;
+      const container = el('#screenContainer');
+      // nav active
+      $$('.nav-btn').forEach(btn => {
+        const active = btn.getAttribute('data-tab') === tab;
+        btn.querySelector('svg').className = `w-5 h-5 ${active?'text-brand-500':'text-ink-300'}`;
+        btn.querySelector('span').className = `text-2xs ${active?'nav-active':'text-ink-200'}`;
+      });
+
+      let html = '';
+      if (tab === 'home') html = ScreenHome();
+      if (tab === 'explore') html = ScreenExplore();
+      if (tab === 'wallet') html = ScreenWallet();
+      if (tab === 'profile') html = ScreenProfile();
+
+      if (tab.startsWith('flow:')) {
+        const [, step, kind] = tab.split(':'); // flow:select|details|confirm|success:kind
+        const data = state.flow.data;
+        if (step === 'select') html = ScreenSelectService(kind);
+        if (step === 'details') html = ScreenEnterDetails(kind, data.provider);
+        if (step === 'confirm') html = ScreenConfirm(kind);
+        if (step === 'success') html = ScreenSuccess(kind);
+      }
+
+      container.innerHTML = html;
+
+      wireCommon();
+      if (state.currentTab === 'wallet') wireWallet();
+      if (state.currentTab === 'home') wireHome();
+      if (state.currentTab.startsWith('flow:')) wireFlow();
+    }
+
+    // Wiring
+    function wireCommon(){
+      // nav
+      $$('[data-go]').forEach(b => b.onclick = () => {
+  const go = b.getAttribute('data-go');
+
+  // if this is a service flow and user NOT logged in -> ask them to sign in
+  if (['bills','airtime','data','betting'].includes(go) && !state.loggedIn) {
+    openModal('Sign in required', `
+      <div class="text-sm text-ink-200">Please sign in with Pi to use ${go}.</div>
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <button id="modalCancel" class="tap py-2 rounded-xl outline-pill">Close</button>
+        <button id="modalLogin" class="tap py-2 rounded-xl bg-brand-500 text-white">Sign in with Pi</button>
+      </div>
+    `);
+    setTimeout(()=>{
+      const ln = document.getElementById('modalLogin'); if (ln) ln.onclick = () => { loginWithPi(); closeModal(); render(`flow:select:${go}`); };
+      const mc = document.getElementById('modalCancel'); if (mc) mc.onclick = () => closeModal();
+    },0);
+    return;
+  }
+
+  // normal behavior (logged in or non-service)
+  if (['bills','airtime','data','betting'].includes(go)) {
+    state.flow.service = go;
+    state.flow.data = {};
+    render(`flow:select:${go}`);
+  } else {
+    render(go);
+  }
+});
+
+     // receive modal — require login
+$$('[data-action="receive"]').forEach(b => b.onclick = requireLogin(() => {
+  openModal('Receive Pi', `
+    <div class="text-sm">Share your QR to receive Pi.</div>
+    <div class="mt-3 rounded-xl bg-ink-900 p-4 text-center">
+      <div class="text-2xs text-ink-300">Your address</div>
+      <div class="font-mono text-sm mt-1 break-all">pi1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</div>
+    </div>
+    <div class="grid grid-cols-2 gap-2 mt-3">
+      <button id="copyAddr" class="tap py-2 rounded-xl outline-pill">Copy</button>
+      <button id="shareAddr" class="tap py-2 rounded-xl bg-brand-500 text-white">Share</button>
+    </div>
+  `);
+  setTimeout(()=>{
+    const copy = document.querySelector('#copyAddr'); if (copy) copy.onclick = ()=> showToast('Address copied');
+    const share = document.querySelector('#shareAddr'); if (share) share.onclick = ()=> showToast('Share sheet opened', '📤');
+  },0);
+}));
+
+// send modal — require login
+$$('[data-action="send"]').forEach(b => b.onclick = requireLogin(() => {
+  openModal('Send Pi', `
+    <div class="text-sm">Enter recipient and amount (Pi).</div>
+    <div class="mt-3 grid gap-2">
+      <input id="sendTo" placeholder="@username or address" class="w-full bg-ink-900 text-white rounded-xl px-3 py-2 ring-1 ring-white/10"/>
+      <input id="sendAmt" type="number" min="0" step="0.0001" placeholder="Amount in Pi" class="w-full bg-ink-900 text-white rounded-xl px-3 py-2 ring-1 ring-white/10"/>
+    </div>
+    <button id="sendNow" class="tap w-full py-2 rounded-xl bg-brand-500 text-white mt-3">Send</button>
+  `);
+  setTimeout(()=>{
+    const sendNow = document.querySelector('#sendNow');
+    if (sendNow) sendNow.onclick = ()=>{
+      const to = document.querySelector('#sendTo').value.trim();
+      const piAmt = Number(document.querySelector('#sendAmt').value || 0);
+      if (!to || !piAmt) return showToast('Enter recipient & amount', '⚠️');
+      // convert Pi -> NGN for your payWithPi function (your app stores rates in NGN per Pi)
+      const ngnAmount = +(piAmt * state.rates.NGN);
+      payWithPi({ ngn: ngnAmount, label: `Send to ${to}` });
+      closeModal();
+    }
+  },0);
+}));
+
+      // modal close
+      const mc = el('#modalClose'); if (mc) mc.onclick = closeModal;
+      const modal = el('#modal'); if (modal) modal.onclick = (e)=>{ if (e.target===modal) closeModal(); }
+
+      // top bar
+      const notifBtn = el('#btnNotifications');
+      const scanBtn = el('#btnScan');
+      if (notifBtn) notifBtn.onclick = () => {
+        el('#notifDot').style.display = 'none';
+        openModal('Notifications', `
+          <div class="space-y-2">
+            ${state.notifications.map(n => `
+              <div class="rounded-xl bg-ink-900 p-3">
+                <div class="text-sm">${n.msg}</div>
+                <div class="text-2xs text-ink-300">${n.time}</div>
+              </div>
+            `).join('')}
+          </div>
+        `);
+      };
+      if (scanBtn) scanBtn.onclick = () => {
+        openModal('QR Scanner', `
+          <div class="rounded-xl bg-ink-900 p-6 text-center">
+            <div class="text-4xl mb-2">📷</div>
+            <div class="text-sm">Point your camera at a QR code.</div>
+            <div class="text-2xs text-ink-300 mt-1">Demo scanner for prototype</div>
+          </div>
+          <button id="scanSim" class="tap w-full py-2 rounded-xl bg-brand-500 text-white mt-3">Simulate Scan</button>
+        `);
+        setTimeout(()=>{
+          const sim = document.querySelector('#scanSim'); if (sim) sim.onclick = () => { showToast('QR scanned', '📱'); closeModal(); };
+        },0);
+      }
+    }
+
+    function wireHome(){
+      // already handled via data-go; placeholder for home-specific hooks
+    }
+
+    function wireWallet(){
+      const input = el('#piInput');
+      const grid = el('#rateGrid');
+      const maxBtn = el('#piMax');
+      const update = () => {
+        const val = Math.max(0, Number(input.value || 0));
+        const conv = computeConversions(val);
+        grid.innerHTML = conv.map(c => RateCard(c.code, c.value)).join('');
+      };
+      if (input) input.oninput = update;
+      if (maxBtn) maxBtn.onclick = () => {
+        input.value = state.piBalance.toFixed(4);
+        update();
+      };
+      // refresh tx
+      $$('[data-refresh="tx"]').forEach(b => b.onclick = ()=>{
+        showToast('Updated');
+        const newTx = { id: 't'+Math.random().toString(36).slice(2,6), type:'Promo Bonus', amt: 0.005, note:'Daily reward', time:'Just now' };
+        state.txns.unshift(newTx);
+        const list = document.querySelector('#txnList');
+        if (list) list.insertAdjacentHTML('afterbegin', TxnItem(newTx));
+      });
+    }
+
+    function wireFlow(){
+      const [, step, kind] = state.currentTab.split(':');
+      // back
+      $$('[data-back]').forEach(b => b.onclick = () => {
+        if (step === 'select') render('home');
+        else if (step === 'details') render(`flow:select:${kind}`);
+        else if (step === 'confirm') render(`flow:details:${kind}`);
+        else render('home');
+      });
+
+      if (step === 'select') {
+        $$('[data-pick]').forEach(b => b.onclick = () => {
+          state.flow.data.provider = b.getAttribute('data-pick');
+          render(`flow:details:${kind}`);
+        });
+      }
+
+      if (step === 'details') {
+        const next = document.querySelector('[data-next="confirm"]');
+        if (next) next.onclick = () => {
+          const id = document.querySelector('#detailId').value.trim();
+          if (!id) return showToast('Please enter details', '⚠️');
+          state.flow.data.id = id;
+          if (kind==='data') {
+            state.flow.data.plan = document.querySelector('#detailPlan').value;
+          } else {
+            const amt = Number(document.querySelector('#detailAmount').value||0);
+            const min = kind==='betting'?100:50;
+            if (!amt || amt<min) return showToast(`Min ₦${min}`, '⚠️');
+            state.flow.data.amount = amt;
+          }
+          render(`flow:confirm:${kind}`);
+        };
+      }
+
+
+      if (step === 'confirm') {
+        const pay = document.querySelector('[data-next="success"]');
+        if (pay) pay.onclick = () => {
+          // Calculate cost
+          const ngn = kind==='data'
+            ? ({'1GB':800,'2.5GB':1500,'5GB':2800,'10GB':5200}[state.flow.data.plan]||0)
+            : Number(state.flow.data.amount||0);
+          const piCost = ngn / state.rates.NGN;
+          state.piBalance = Math.max(0, state.piBalance - piCost)
+
+          const label =
+            kind==='airtime' ? 'Airtime' :
+            kind==='data' ? 'Data' :
+            kind==='bills' ? 'Electricity' :
+            'Betting Top-up';
+
+          const note =
+            kind==='airtime' ? (state.flow.data.provider + ' ' + maskPhone(state.flow.data.id)) :
+            kind==='data' ? (state.flow.data.provider + ' ' + maskPhone(state.flow.data.id)) :
+            kind==='bills' ? state.flow.data.provider :
+            (state.flow.data.provider + ' ' + state.flow.data.id);
+
+          state.txns.unshift({
+            id: 't'+Math.random().toString(36).slice(2,6),
+            type: label,
+            amt: -piCost,
+            note,
+            time: 'Just now'
+          });
+
+          render(`flow:success:${kind}`);
+        };
+      }
+    }
+
+    // Live rates ticker (demo)
+    function startRateTicker(){
+      setInterval(() => {
+        for (const k of Object.keys(state.rates)) {
+          const base = state.rates[k];
+          const jitter = 1 + (Math.random() - 0.5) * 0.01;
+          state.rates[k] = +(base * jitter).toFixed(2);
+        }
+        if (state.currentTab === 'wallet' || state.currentTab === 'home') {
+          render(state.currentTab);
+        }
+      }, 6000);
+    }
+
+    // Init
+    function init(){
+      render('home');
+      // mark nav default
+      $$('.nav-btn').forEach(btn => {
+        if (btn.getAttribute('data-tab')==='home') {
+          btn.querySelector('svg').classList.add('text-brand-500');
+          btn.querySelector('span').classList.add('nav-active');
+        }
+      });
+      startRateTicker();
+    }
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981837d070b97021',t:'MTc1ODI3NTgzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();const exploreBtn = document.querySelector('[data-action="explore"]');
+if (exploreBtn) {
+  exploreBtn.addEventListener("click", () => {
+    if (!checkLoginBeforeUse("Explore")) return;
+    console.log("Explore page opened");
+ });} // Attach click listeners to nav buttons
+$$('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.getAttribute('data-tab');
+    render(tab);
+  });
+});
+
+// Initial render
+render('home');
+
+ </script></body>
+</html>
+"
